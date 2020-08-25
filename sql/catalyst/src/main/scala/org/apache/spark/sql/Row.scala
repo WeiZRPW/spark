@@ -160,6 +160,7 @@ trait Row extends Serializable {
    *   ByteType -> java.lang.Byte
    *   ShortType -> java.lang.Short
    *   IntegerType -> java.lang.Integer
+   *   LongType -> java.lang.Long
    *   FloatType -> java.lang.Float
    *   DoubleType -> java.lang.Double
    *   StringType -> String
@@ -188,6 +189,7 @@ trait Row extends Serializable {
    *   ByteType -> java.lang.Byte
    *   ShortType -> java.lang.Short
    *   IntegerType -> java.lang.Integer
+   *   LongType -> java.lang.Long
    *   FloatType -> java.lang.Float
    *   DoubleType -> java.lang.Double
    *   StringType -> String
@@ -314,7 +316,7 @@ trait Row extends Serializable {
    *
    * @throws ClassCastException when data type does not match.
    */
-  def getSeq[T](i: Int): Seq[T] = getAs[Seq[T]](i)
+  def getSeq[T](i: Int): Seq[T] = getAs[scala.collection.Seq[T]](i).toSeq
 
   /**
    * Returns the value at position i of array type as `java.util.List`.
@@ -571,14 +573,10 @@ trait Row extends Serializable {
       case (s: String, _) => JString(s)
       case (b: Array[Byte], BinaryType) =>
         JString(Base64.getEncoder.encodeToString(b))
-      case (d: LocalDate, _) =>
-        JString(dateFormatter.format(DateTimeUtils.localDateToDays(d)))
-      case (d: Date, _) =>
-        JString(dateFormatter.format(DateTimeUtils.fromJavaDate(d)))
-      case (i: Instant, _) =>
-        JString(timestampFormatter.format(DateTimeUtils.instantToMicros(i)))
-      case (t: Timestamp, _) =>
-        JString(timestampFormatter.format(DateTimeUtils.fromJavaTimestamp(t)))
+      case (d: LocalDate, _) => JString(dateFormatter.format(d))
+      case (d: Date, _) => JString(dateFormatter.format(d))
+      case (i: Instant, _) => JString(timestampFormatter.format(i))
+      case (t: Timestamp, _) => JString(timestampFormatter.format(t))
       case (i: CalendarInterval, _) => JString(i.toString)
       case (a: Array[_], ArrayType(elementType, _)) =>
         iteratorToJsonArray(a.iterator, elementType)
