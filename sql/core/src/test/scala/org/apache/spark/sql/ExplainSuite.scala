@@ -261,11 +261,11 @@ class ExplainSuite extends ExplainSuiteHelper with DisableAdaptiveExecutionSuite
             "PartitionFilters: \\[isnotnull\\(k#xL\\), dynamicpruningexpression\\(k#xL " +
               "IN subquery#x\\)\\]"
           val expected_pattern3 =
-            "Location: InMemoryFileIndex \\[.*org.apache.spark.sql.ExplainSuite" +
-              "/df2/.*, ... 99 entries\\]"
+            "Location: InMemoryFileIndex \\[\\S*org.apache.spark.sql.ExplainSuite" +
+              "/df2/\\S*, ... 99 entries\\]"
           val expected_pattern4 =
-            "Location: InMemoryFileIndex \\[.*org.apache.spark.sql.ExplainSuite" +
-              "/df1/.*, ... 999 entries\\]"
+            "Location: InMemoryFileIndex \\[\\S*org.apache.spark.sql.ExplainSuite" +
+              "/df1/\\S*, ... 999 entries\\]"
           withNormalizedExplain(sqlText) { normalizedOutput =>
             assert(expected_pattern1.r.findAllMatchIn(normalizedOutput).length == 1)
             assert(expected_pattern2.r.findAllMatchIn(normalizedOutput).length == 1)
@@ -367,7 +367,7 @@ class ExplainSuite extends ExplainSuiteHelper with DisableAdaptiveExecutionSuite
         val basePath = dir.getCanonicalPath + "/" + fmt
         val pushFilterMaps = Map (
           "parquet" ->
-            "|PushedFilers: \\[.*\\(id\\), .*\\(value\\), .*\\(id,1\\), .*\\(value,2\\)\\]",
+            "|PushedFilers: \\[IsNotNull\\(value\\), GreaterThan\\(value,2\\)\\]",
           "orc" ->
             "|PushedFilers: \\[.*\\(id\\), .*\\(value\\), .*\\(id,1\\), .*\\(value,2\\)\\]",
           "csv" ->
@@ -406,6 +406,21 @@ class ExplainSuite extends ExplainSuiteHelper with DisableAdaptiveExecutionSuite
           assert(expected_plan_fragment1.r.findAllMatchIn(normalizedOutput).length == 1)
         }
       }
+    }
+  }
+
+  test("Explain UnresolvedRelation with CaseInsensitiveStringMap options") {
+    val tableName = "test"
+    withTable(tableName) {
+      val df1 = Seq((1L, "a"), (2L, "b"), (3L, "c")).toDF("id", "data")
+      df1.write.saveAsTable(tableName)
+      val df2 = spark.read
+        .option("key1", "value1")
+        .option("KEY2", "VALUE2")
+        .table(tableName)
+      // == Parsed Logical Plan ==
+      // 'UnresolvedRelation [test], [key1=value1, KEY2=VALUE2]
+      checkKeywordsExistsInExplain(df2, keywords = "[key1=value1, KEY2=VALUE2]")
     }
   }
 }
